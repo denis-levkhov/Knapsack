@@ -2,20 +2,24 @@ package diploma.solver;
 
 import diploma.entity.Result;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class DpMultiSorted implements TaskSolver {
 
     @Override
     public Result solve(int n, int W, int[] weights, int[][] P) {
         List<Comparator<Integer>> strategies = List.of(
-                Comparator.comparingInt(i -> weights[i]),                                 // по весу (возр.)
-                (i1, i2) -> Integer.compare(weights[i2], weights[i1]),                     // по весу (убыв.)
-                (i1, i2) -> Double.compare((double)(P[i2][i2]) / weights[i2],
-                        (double)(P[i1][i1]) / weights[i1])               // по ценности на вес
+                Comparator.comparingInt(i -> weights[i]), // по весу (возр.)
+                (i1, i2) -> Integer.compare(weights[i2], weights[i1]), // по весу (убыв.)
+                (i1, i2) -> Double.compare(
+                        (double) P[i2][i2] / weights[i2],
+                        (double) P[i1][i1] / weights[i1]) // по ценности на вес
         );
 
-        Result bestResult = new Result(0, new ArrayList<>());
+        int bestProfit = Integer.MIN_VALUE;
+        List<Integer> selectedItems = new ArrayList<>();
 
         for (Comparator<Integer> strategy : strategies) {
             List<Integer> order = new ArrayList<>();
@@ -23,56 +27,68 @@ public class DpMultiSorted implements TaskSolver {
             order.sort(strategy);
 
             Result current = solveDP(order, W, weights, P);
-            if (current.getProfit() > bestResult.getProfit()) {
-                bestResult = current;
+            if (current.getProfit() > bestProfit) {
+                bestProfit = current.getProfit();
+                selectedItems = current.getItems();
             }
         }
 
-        return bestResult;
+        return Result.builder()
+                .profit(bestProfit)
+                .items(selectedItems)
+                .build();
     }
 
     private static Result solveDP(List<Integer> order, int W, int[] weights, int[][] P) {
         int n = order.size();
         int[][] dp = new int[n + 1][W + 1];
         List<Integer>[][] selected = new ArrayList[n + 1][W + 1];
-        for (int i = 0; i <= n; i++) for (int w = 0; w <= W; w++) selected[i][w] = new ArrayList<>();
 
-        for (int k = 1; k <= n; k++) {
-            int item = order.get(k - 1);
-            int weight = weights[item];
+        for (int i = 0; i <= n; i++) {
+            for (int w = 0; w <= W; w++) {
+                selected[i][w] = new ArrayList<>();
+            }
+        }
 
-            for (int r = 0; r <= W; r++) {
-                dp[k][r] = dp[k - 1][r];
-                selected[k][r] = new ArrayList<>(selected[k - 1][r]);
+        for (int i = 1; i <= n; i++) {
+            int item = order.get(i - 1);
+            int itemWeight = weights[item];
 
-                if (r >= weight) {
-                    int prevWeight = r - weight;
-                    List<Integer> prevItems = selected[k - 1][prevWeight];
+            for (int w = 0; w <= W; w++) {
+                dp[i][w] = dp[i - 1][w];
+                selected[i][w] = new ArrayList<>(selected[i - 1][w]);
+
+                if (w >= itemWeight) {
+                    int prevWeight = w - itemWeight;
+                    List<Integer> prevItems = selected[i - 1][prevWeight];
 
                     int profit = P[item][item];
-                    for (int i : prevItems) {
-                        profit += P[i][item] + P[item][i];
+                    for (int j : prevItems) {
+                        profit += P[j][item] + P[item][j];
                     }
 
-                    int totalProfit = dp[k - 1][prevWeight] + profit;
-                    if (totalProfit > dp[k][r]) {
-                        dp[k][r] = totalProfit;
-                        selected[k][r] = new ArrayList<>(prevItems);
-                        selected[k][r].add(item);
+                    int totalProfit = dp[i - 1][prevWeight] + profit;
+                    if (totalProfit > dp[i][w]) {
+                        dp[i][w] = totalProfit;
+                        selected[i][w] = new ArrayList<>(prevItems);
+                        selected[i][w].add(item);
                     }
                 }
             }
         }
 
-        int bestProfit = 0;
-        List<Integer> bestItems = new ArrayList<>();
-        for (int r = 0; r <= W; r++) {
-            if (dp[n][r] > bestProfit) {
-                bestProfit = dp[n][r];
-                bestItems = selected[n][r];
+        int bestProfit = Integer.MIN_VALUE;
+        List<Integer> selectedItems = new ArrayList<>();
+        for (int w = 0; w <= W; w++) {
+            if (dp[n][w] > bestProfit) {
+                bestProfit = dp[n][w];
+                selectedItems = selected[n][w];
             }
         }
 
-        return new Result(bestProfit, bestItems);
+        return Result.builder()
+                .profit(bestProfit)
+                .items(selectedItems)
+                .build();
     }
 }

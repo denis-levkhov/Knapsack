@@ -11,10 +11,9 @@ public class ZeroOneClassicDp implements TaskSolver {
     public Result solve(int n, int W, int[] weights, int[][] P) {
         int[][] dp = new int[n + 1][W + 1];
 
-        // Заполняем таблицу DP
         for (int i = 1; i <= n; i++) {
             int weight = weights[i - 1];
-            int value = P[i - 1][i - 1]; // ценность = диагональ матрицы P
+            int value = P[i - 1][i - 1];
 
             for (int w = 0; w <= W; w++) {
                 if (weight > w) {
@@ -25,8 +24,10 @@ public class ZeroOneClassicDp implements TaskSolver {
             }
         }
 
-        List<Integer> selectedItems = new ArrayList<>();
         int w = W;
+        int profit = dp[n][W];
+        List<Integer> selectedItems = new ArrayList<>();
+
         for (int i = n; i > 0; i--) {
             if (dp[i][w] != dp[i - 1][w]) {
                 selectedItems.add(i - 1);
@@ -35,7 +36,7 @@ public class ZeroOneClassicDp implements TaskSolver {
         }
 
         return Result.builder()
-                .profit(dp[n][W])
+                .profit(profit)
                 .items(selectedItems)
                 .build();
     }

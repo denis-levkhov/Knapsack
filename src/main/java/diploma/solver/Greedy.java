@@ -8,22 +8,22 @@ import java.util.List;
 public class Greedy implements TaskSolver {
 
     @Override
-    public Result solve(int n, int capacity, int[] weights, int[][] P) {
-        boolean[] used = new boolean[n]; // выбран или нет
-        List<Integer> selected = new ArrayList<>(); // список включенных элементов
-        int currentWeight = 0; // сколько занято веса в рюкзаке
-        int totalProfit = 0; // текущая суммарная ценность
+    public Result solve(int n, int W, int[] weights, int[][] P) {
+        boolean[] used = new boolean[n];
+        List<Integer> selectedItems = new ArrayList<>();
+        int currentWeight = 0;
+        int totalProfit = 0;
 
         while (true) {
             int bestItem = -1;
             double bestRatio = -1;
 
-            for (int i = 0; i < n; i++) { // перебираем неиспользованные предметы, не превысив ценность
-                if (used[i] || weights[i] + currentWeight > capacity) continue;
+            for (int i = 0; i < n; i++) {
+                if (used[i] || weights[i] + currentWeight > W) continue;
 
-                int profit = P[i][i]; // собственная ценность
-                for (int j : selected) {
-                    profit += P[i][j] + P[j][i]; // взаимодействие с уже выбранными
+                int profit = P[i][i];
+                for (int j : selectedItems) {
+                    profit += P[i][j] + P[j][i];
                 }
 
                 double ratio = (double) profit / weights[i];
@@ -36,18 +36,20 @@ public class Greedy implements TaskSolver {
             if (bestItem == -1) break;
 
             used[bestItem] = true;
-            selected.add(bestItem);
+            selectedItems.add(bestItem);
             currentWeight += weights[bestItem];
 
-            // Добавляем вклад предмета в общий профит
             totalProfit += P[bestItem][bestItem];
-            for (int j : selected) {
+            for (int j : selectedItems) {
                 if (j != bestItem) {
                     totalProfit += P[bestItem][j] + P[j][bestItem];
                 }
             }
         }
 
-        return new Result(totalProfit, selected);
+        return Result.builder()
+                .profit(totalProfit)
+                .items(selectedItems)
+                .build();
     }
 }

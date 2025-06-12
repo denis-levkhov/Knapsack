@@ -7,27 +7,27 @@ import java.util.*;
 public class TabuSearch implements TaskSolver {
 
     @Override
-    public Result solve(int n, int capacity, int[] weights, int[][] P) {
-        int maxIterations = 100;
-        int tabuTenure = 7;
+    public Result solve(int n, int W, int[] weights, int[][] P) {
+        final int maxIterations = 100;
+        final int tabuTenure = 7;
         Random random = new Random();
 
-        boolean[] current = generateInitialSolution(n, capacity, weights);
-        boolean[] best = Arrays.copyOf(current, n);
-        int bestProfit = evaluate(current, weights, P, capacity);
+        boolean[] currentSolution = generateInitialSolution(n, W, weights);
+        boolean[] bestSolution = Arrays.copyOf(currentSolution, n);
+        int bestProfit = evaluate(currentSolution, weights, P, W);
 
         Map<String, Integer> tabuList = new HashMap<>();
 
         for (int iteration = 0; iteration < maxIterations; iteration++) {
-            List<boolean[]> neighbors = generateNeighbors(current);
+            List<boolean[]> neighbors = generateNeighbors(currentSolution);
             boolean[] bestCandidate = null;
             int bestCandidateProfit = Integer.MIN_VALUE;
 
             for (boolean[] neighbor : neighbors) {
-                if (totalWeight(neighbor, weights) > capacity) continue;
+                if (totalWeight(neighbor, weights) > W) continue;
 
                 String key = Arrays.toString(neighbor);
-                int profit = evaluate(neighbor, weights, P, capacity);
+                int profit = evaluate(neighbor, weights, P, W);
 
                 if (!tabuList.containsKey(key) || profit > bestProfit) {
                     if (profit > bestCandidateProfit) {
@@ -39,12 +39,12 @@ public class TabuSearch implements TaskSolver {
 
             if (bestCandidate == null) break;
 
-            current = bestCandidate;
-            String moveKey = Arrays.toString(current);
+            currentSolution = bestCandidate;
+            String moveKey = Arrays.toString(currentSolution);
             tabuList.put(moveKey, iteration + tabuTenure);
 
             if (bestCandidateProfit > bestProfit) {
-                best = Arrays.copyOf(current, n);
+                bestSolution = Arrays.copyOf(currentSolution, n);
                 bestProfit = bestCandidateProfit;
             }
 
@@ -52,21 +52,24 @@ public class TabuSearch implements TaskSolver {
             tabuList.entrySet().removeIf(e -> e.getValue() <= finalIteration);
         }
 
-        List<Integer> selected = new ArrayList<>();
+        List<Integer> selectedItems = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            if (best[i]) selected.add(i);
+            if (bestSolution[i]) selectedItems.add(i);
         }
 
-        return new Result(bestProfit, selected);
+        return Result.builder()
+                .profit(bestProfit)
+                .items(selectedItems)
+                .build();
     }
 
-    private static boolean[] generateInitialSolution(int n, int capacity, int[] weights) {
+    private static boolean[] generateInitialSolution(int n, int W, int[] weights) {
         boolean[] solution = new boolean[n];
-        int totalWeight = 0;
+        int total = 0;
         for (int i = 0; i < n; i++) {
-            if (totalWeight + weights[i] <= capacity) {
+            if (total + weights[i] <= W) {
                 solution[i] = true;
-                totalWeight += weights[i];
+                total += weights[i];
             }
         }
         return solution;
@@ -82,8 +85,8 @@ public class TabuSearch implements TaskSolver {
         return neighbors;
     }
 
-    private static int evaluate(boolean[] solution, int[] weights, int[][] P, int capacity) {
-        if (totalWeight(solution, weights) > capacity) return Integer.MIN_VALUE;
+    private static int evaluate(boolean[] solution, int[] weights, int[][] P, int W) {
+        if (totalWeight(solution, weights) > W) return Integer.MIN_VALUE;
         int profit = 0;
         for (int i = 0; i < solution.length; i++) {
             if (!solution[i]) continue;
