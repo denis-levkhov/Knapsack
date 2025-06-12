@@ -9,7 +9,7 @@ public class BruteForce implements TaskSolver {
 
     @Override
     public Result solve(int n, int W, int[] weights, int[][] P) {
-        int totalCombinations = 1 << n;
+        long totalCombinations = 1L << n;
         int bestProfit = Integer.MIN_VALUE;
         int[] selectedArray = new int[n];
 

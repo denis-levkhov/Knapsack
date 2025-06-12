@@ -10,7 +10,6 @@ public class TabuSearch implements TaskSolver {
     public Result solve(int n, int W, int[] weights, int[][] P) {
         final int maxIterations = 100;
         final int tabuTenure = 7;
-        Random random = new Random();
 
         boolean[] currentSolution = generateInitialSolution(n, W, weights);
         boolean[] bestSolution = Arrays.copyOf(currentSolution, n);
