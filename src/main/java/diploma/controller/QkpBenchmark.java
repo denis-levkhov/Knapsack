@@ -8,7 +8,7 @@ import java.util.concurrent.*;
 
 public class QkpBenchmark {
     static final int MAX_BRUTE_N = 20;
-    static final long TIME_LIMIT_MS = 5000;
+    static final long TIME_LIMIT_MS = 5;
 
     static final List<TaskSolver> solvers = List.of(
             new BruteForce(),
@@ -17,11 +17,12 @@ public class QkpBenchmark {
             new Greedy(),
             new TabuSearch(),
             new ZeroOneClassicDp()
+//            new StandardLinearOrTools()
     );
 
     public static void main(String[] args) {
         for (int test = 1; test <= 5; test++) {
-            int n = 100 + test * 2;
+            int n = 10 + test * 2;
             int maxWeight = 20 + test * 3;
 
             int[] weights = generateWeights(n);
