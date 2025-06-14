@@ -1,16 +1,18 @@
 package diploma.runners;
 
+import diploma.config.ThreadPool;
 import diploma.entity.Result;
 import diploma.solver.*;
+import diploma.util.ProfitCalculator;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-public class QkpBenchmark {
-    static final int MAX_BRUTE_N = 22;
-    static final long TIME_LIMIT_MS = 20000;
+public class Bench {
+    private static final int MAX_BRUTE_N = 22;
+    private static final long TIME_LIMIT_MS = 20000;
 
-    static final List<TaskSolver> solvers = List.of(
+    private static final List<TaskSolver> solvers = List.of(
             new BruteForce(),
             new DpFomeni(),
             new DpMultiSorted(),
@@ -20,17 +22,25 @@ public class QkpBenchmark {
     );
 
     public static void main(String[] args) {
-        int n = 400;
-        int[] weights = generateWeights(n);
-        int[][] P = generateProfitMatrix(n);
-//
+        QkpDataIO.LoadedInstance instance;
+        try {
+            instance = QkpDataIO.loadInstance("instance_20.txt");
+        } catch (Exception e) {
+            System.err.println("Failed to load input instance: " + e.getMessage());
+            return;
+        }
 
+        int n = instance.weights.length;
+        int[] weights = instance.weights;
+        int[][] P = instance.P;
 
         for (int test = 1; test <= 5; test++) {
             int W = 50 + test * 5;
             Integer optimalProfit = null;
+
             if (n <= MAX_BRUTE_N) {
-                optimalProfit = runWithTimeout(new BruteForce(), n, W, weights, P, TIME_LIMIT_MS).getProfit();
+                Result bruteResult = runWithTimeout(new BruteForce(), n, W, weights, P, TIME_LIMIT_MS);
+                optimalProfit = ProfitCalculator.calculateProfit(bruteResult.getItems(), P);
                 System.out.println("\n[BruteForce optimal: " + optimalProfit + "]");
             }
 
@@ -47,49 +57,27 @@ public class QkpBenchmark {
                 Result result = runWithTimeout(solver, n, W, weights, P, TIME_LIMIT_MS);
                 long duration = System.currentTimeMillis() - start;
 
-                double accuracy = (optimalProfit == null || optimalProfit <= 0) ? -1 : (double) result.getProfit() / optimalProfit;
+                int profit = ProfitCalculator.calculateProfit(result.getItems(), P);
+
+                double accuracy = (optimalProfit == null || optimalProfit <= 0) ? -1 : (double) profit / optimalProfit;
                 String accStr = (accuracy < 0) ? "-" : String.format("%.2f", accuracy);
 
                 System.out.printf("%-20s %-10d %-10d %-10s\n",
-                        solver.getClass().getSimpleName(), duration, result.getProfit(), accStr);
+                        solver.getClass().getSimpleName(), duration, profit, accStr);
             }
         }
+        ThreadPool.shutdown();
     }
 
     public static Result runWithTimeout(TaskSolver solver, int n, int W, int[] weights, int[][] P, long timeoutMs) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            Future<Result> future = executor.submit(() -> solver.solve(n, W, weights, P));
+            CompletableFuture<Result> future = CompletableFuture.supplyAsync(() -> solver.solve(n, W, weights, P), ThreadPool.EXECUTOR);
             return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             System.out.println(solver.getClass().getSimpleName() + " exceeded time limit");
         } catch (Exception e) {
             System.out.println(solver.getClass().getSimpleName() + " failed: " + e.getMessage());
-        } finally {
-            executor.shutdownNow();
         }
         return new Result(-1, List.of());
-    }
-
-    public static int[] generateWeights(int n) {
-        Random random = new Random();
-        int[] weights = new int[n];
-        for (int i = 0; i < n; i++) {
-            weights[i] = 1 + random.nextInt(50);
-        }
-        return weights;
-    }
-
-    public static int[][] generateProfitMatrix(int n) {
-        Random random = new Random();
-        int[][] P = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = i; j < n; j++) {
-                int value = random.nextInt(50);
-                P[i][j] = value;
-                P[j][i] = value; // симметричная матрица
-            }
-        }
-        return P;
     }
 }
