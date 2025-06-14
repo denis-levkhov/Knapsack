@@ -64,7 +64,7 @@ public class DpMultiSorted implements TaskSolver {
 
                     int profit = P[item][item];
                     for (int j : prevItems) {
-                        profit += P[j][item] + P[item][j];
+                        profit += P[j][item];
                     }
 
                     int totalProfit = dp[i - 1][prevWeight] + profit;

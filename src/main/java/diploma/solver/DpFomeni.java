@@ -30,8 +30,11 @@ public class DpFomeni implements TaskSolver {
                     List<Integer> prevItems = selected[i - 1][prevWeight];
 
                     int profit = P[i - 1][i - 1];
+
                     for (int j : prevItems) {
-                        profit += P[i - 1][j] + P[j][i - 1];
+                        if (j < i - 1) {
+                            profit += P[i - 1][j];
+                        }
                     }
 
                     int totalProfit = dp[i - 1][prevWeight] + profit;

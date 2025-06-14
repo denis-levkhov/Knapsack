@@ -8,14 +8,15 @@ public class TabuSearch implements TaskSolver {
 
     @Override
     public Result solve(int n, int W, int[] weights, int[][] P) {
-        final int maxIterations = 100;
-        final int tabuTenure = 7;
+        final int maxIterations = 1000;
+        final int tabuTenure = 100;
 
-        boolean[] currentSolution = generateInitialSolution(n, W, weights);
+        boolean[] currentSolution = generateGreedyInitialSolution(n, W, weights, P);
         boolean[] bestSolution = Arrays.copyOf(currentSolution, n);
         int bestProfit = evaluate(currentSolution, weights, P, W);
 
-        Map<String, Integer> tabuList = new HashMap<>();
+        Set<String> tabuList = new HashSet<>();
+        Deque<String> tabuQueue = new ArrayDeque<>();
 
         for (int iteration = 0; iteration < maxIterations; iteration++) {
             List<boolean[]> neighbors = generateNeighbors(currentSolution);
@@ -28,7 +29,7 @@ public class TabuSearch implements TaskSolver {
                 String key = Arrays.toString(neighbor);
                 int profit = evaluate(neighbor, weights, P, W);
 
-                if (!tabuList.containsKey(key) || profit > bestProfit) {
+                if (!tabuList.contains(key) || profit > bestProfit) {
                     if (profit > bestCandidateProfit) {
                         bestCandidateProfit = profit;
                         bestCandidate = neighbor;
@@ -40,15 +41,18 @@ public class TabuSearch implements TaskSolver {
 
             currentSolution = bestCandidate;
             String moveKey = Arrays.toString(currentSolution);
-            tabuList.put(moveKey, iteration + tabuTenure);
+            tabuList.add(moveKey);
+            tabuQueue.add(moveKey);
+
+            if (tabuQueue.size() > tabuTenure) {
+                String oldest = tabuQueue.poll();
+                tabuList.remove(oldest);
+            }
 
             if (bestCandidateProfit > bestProfit) {
                 bestSolution = Arrays.copyOf(currentSolution, n);
                 bestProfit = bestCandidateProfit;
             }
-
-            int finalIteration = iteration;
-            tabuList.entrySet().removeIf(e -> e.getValue() <= finalIteration);
         }
 
         List<Integer> selectedItems = new ArrayList<>();
@@ -62,16 +66,40 @@ public class TabuSearch implements TaskSolver {
                 .build();
     }
 
-    private static boolean[] generateInitialSolution(int n, int W, int[] weights) {
-        boolean[] solution = new boolean[n];
-        int total = 0;
-        for (int i = 0; i < n; i++) {
-            if (total + weights[i] <= W) {
-                solution[i] = true;
-                total += weights[i];
+    private static boolean[] generateGreedyInitialSolution(int n, int W, int[] weights, int[][] P) {
+        boolean[] used = new boolean[n];
+        int currentWeight = 0;
+        List<Integer> selected = new ArrayList<>();
+
+        while (true) {
+            int bestItem = -1;
+            double bestRatio = -1;
+
+            for (int i = 0; i < n; i++) {
+                if (used[i] || weights[i] + currentWeight > W) continue;
+
+                int profit = P[i][i];
+                for (int j : selected) {
+                    profit += P[i][j]; // односторонняя синергия
+                }
+
+                double ratio = (double) profit / weights[i];
+                if (ratio > bestRatio) {
+                    bestRatio = ratio;
+                    bestItem = i;
+                }
             }
+
+            if (bestItem == -1) break;
+
+            used[bestItem] = true;
+            selected.add(bestItem);
+            currentWeight += weights[bestItem];
         }
-        return solution;
+
+        boolean[] result = new boolean[n];
+        for (int idx : selected) result[idx] = true;
+        return result;
     }
 
     private static List<boolean[]> generateNeighbors(boolean[] solution) {
@@ -90,8 +118,8 @@ public class TabuSearch implements TaskSolver {
         for (int i = 0; i < solution.length; i++) {
             if (!solution[i]) continue;
             profit += P[i][i];
-            for (int j = i + 1; j < solution.length; j++) {
-                if (solution[j]) profit += P[i][j] + P[j][i];
+            for (int j = 0; j < i; j++) {
+                if (solution[j]) profit += P[i][j]; // однократный учёт синергии
             }
         }
         return profit;

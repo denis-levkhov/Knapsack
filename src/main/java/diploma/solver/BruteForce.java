@@ -32,7 +32,7 @@ public class BruteForce implements TaskSolver {
                 if (currentItems[i] == 1) {
                     for (int j = i + 1; j < n; j++) {
                         if (currentItems[j] == 1) {
-                            currentProfit += 2 * P[i][j];
+                            currentProfit += P[i][j];
                         }
                     }
                 }

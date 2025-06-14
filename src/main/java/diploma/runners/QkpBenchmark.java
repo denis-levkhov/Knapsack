@@ -1,4 +1,4 @@
-package diploma.controller;
+package diploma.runners;
 
 import diploma.entity.Result;
 import diploma.solver.*;
@@ -7,8 +7,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class QkpBenchmark {
-    static final int MAX_BRUTE_N = 20;
-    static final long TIME_LIMIT_MS = 5;
+    static final int MAX_BRUTE_N = 22;
+    static final long TIME_LIMIT_MS = 20000;
 
     static final List<TaskSolver> solvers = List.of(
             new BruteForce(),
@@ -17,24 +17,24 @@ public class QkpBenchmark {
             new Greedy(),
             new TabuSearch(),
             new ZeroOneClassicDp()
-//            new StandardLinearOrTools()
     );
 
     public static void main(String[] args) {
+        int n = 400;
+        int[] weights = generateWeights(n);
+        int[][] P = generateProfitMatrix(n);
+//
+
+
         for (int test = 1; test <= 5; test++) {
-            int n = 10 + test * 2;
-            int maxWeight = 20 + test * 3;
-
-            int[] weights = generateWeights(n);
-            int[][] P = generateProfitMatrix(n);
-
+            int W = 50 + test * 5;
             Integer optimalProfit = null;
             if (n <= MAX_BRUTE_N) {
-                optimalProfit = runWithTimeout(new BruteForce(), n, maxWeight, weights, P, TIME_LIMIT_MS).getProfit();
+                optimalProfit = runWithTimeout(new BruteForce(), n, W, weights, P, TIME_LIMIT_MS).getProfit();
                 System.out.println("\n[BruteForce optimal: " + optimalProfit + "]");
             }
 
-            System.out.printf("\nTest %d | n = %d | maxWeight = %d\n", test, n, maxWeight);
+            System.out.printf("\nTest %d | n = %d | maxWeight = %d\n", test, n, W);
             System.out.printf("%-20s %-10s %-10s %-10s\n", "Algorithm", "Time(ms)", "Profit", "Accuracy");
 
             for (TaskSolver solver : solvers) {
@@ -44,7 +44,7 @@ public class QkpBenchmark {
                 }
 
                 long start = System.currentTimeMillis();
-                Result result = runWithTimeout(solver, n, maxWeight, weights, P, TIME_LIMIT_MS);
+                Result result = runWithTimeout(solver, n, W, weights, P, TIME_LIMIT_MS);
                 long duration = System.currentTimeMillis() - start;
 
                 double accuracy = (optimalProfit == null || optimalProfit <= 0) ? -1 : (double) result.getProfit() / optimalProfit;
@@ -75,7 +75,7 @@ public class QkpBenchmark {
         Random random = new Random();
         int[] weights = new int[n];
         for (int i = 0; i < n; i++) {
-            weights[i] = 1 + random.nextInt(10);
+            weights[i] = 1 + random.nextInt(50);
         }
         return weights;
     }
@@ -85,7 +85,7 @@ public class QkpBenchmark {
         int[][] P = new int[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = i; j < n; j++) {
-                int value = random.nextInt(10);
+                int value = random.nextInt(50);
                 P[i][j] = value;
                 P[j][i] = value; // симметричная матрица
             }

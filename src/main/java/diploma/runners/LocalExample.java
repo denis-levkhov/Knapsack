@@ -1,4 +1,4 @@
-package diploma.controller;
+package diploma.runners;
 
 import diploma.entity.Result;
 import diploma.solver.BruteForce;
@@ -9,9 +9,9 @@ import diploma.solver.TabuSearch;
 import diploma.solver.TaskSolver;
 import diploma.solver.ZeroOneClassicDp;
 
-public class QkpController {
+public class LocalExample {
 
-    public static void launch() {
+    public static void main(String[] args) {
         int n = 3;
         int W = 4;
         int[] weights = {2, 3, 1};

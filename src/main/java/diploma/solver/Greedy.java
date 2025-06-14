@@ -23,7 +23,7 @@ public class Greedy implements TaskSolver {
 
                 int profit = P[i][i];
                 for (int j : selectedItems) {
-                    profit += P[i][j] + P[j][i];
+                    profit += (j < i) ? P[j][i] : P[i][j];
                 }
 
                 double ratio = (double) profit / weights[i];
@@ -42,7 +42,7 @@ public class Greedy implements TaskSolver {
             totalProfit += P[bestItem][bestItem];
             for (int j : selectedItems) {
                 if (j != bestItem) {
-                    totalProfit += P[bestItem][j] + P[j][bestItem];
+                    totalProfit += (j < bestItem) ? P[j][bestItem] : P[bestItem][j];
                 }
             }
         }
