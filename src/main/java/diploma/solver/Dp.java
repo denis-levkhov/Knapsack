@@ -5,7 +5,7 @@ import diploma.entity.Result;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DpFomeni implements TaskSolver {
+public class Dp implements TaskSolver {
 
     @Override
     public Result solve(int n, int W, int[] weights, int[][] P) {

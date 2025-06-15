@@ -1,7 +1,7 @@
 package diploma.runners;
 
 import diploma.entity.Result;
-import diploma.solver.DpFomeni;
+import diploma.solver.Dp;
 import diploma.util.QkpSolutionValidator;
 
 public class ModelExample {
@@ -22,7 +22,7 @@ public class ModelExample {
                 {2, 1, 0, 3, 1, 6}
         };
 
-        DpFomeni dpFomeni = new DpFomeni();
+        Dp dpFomeni = new Dp();
         Result result = dpFomeni.solve(n, W, weights, P);
         System.out.println(result);
 

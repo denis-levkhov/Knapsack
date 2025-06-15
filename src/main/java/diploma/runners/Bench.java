@@ -5,17 +5,19 @@ import diploma.entity.Result;
 import diploma.solver.*;
 import diploma.util.ProfitCalculator;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class Bench {
     private static final int MAX_BRUTE_N = 22;
     private static final long TIME_LIMIT_MS = 20000;
-    private static final Random RANDOM = new Random(123);
+    private static final Random RANDOM = new Random(1);
 
     private static final List<TaskSolver> solvers = List.of(
             new BruteForce(),
-            new DpFomeni(),
+            new Dp(),
             new DpMultiSorted(),
             new Greedy(),
             new TabuSearch(),
@@ -23,50 +25,69 @@ public class Bench {
     );
 
     public static void main(String[] args) {
-        int n = 20;
+        int n = 100;
         int[] weights = generateWeights(n);
         int[][] P = generateProfitMatrix(n);
+        int[] dpReferenceProfits = new int[6];
 
-        for (int test = 1; test <= 5; test++) {
-            int W = 50 + test * 10;
-            Integer optimalProfit = null;
+        try (FileWriter writer = new FileWriter("benchmark_results.csv")) {
+            writer.write("Test,Algorithm,Time(μs),Profit,Accuracy\n");
 
-            if (n <= MAX_BRUTE_N) {
-                Result bruteResult = runWithTimeout(new BruteForce(), n, W, weights, P, TIME_LIMIT_MS);
-                optimalProfit = ProfitCalculator.calculateProfit(bruteResult.getItems(), P);
-                System.out.println("\n[BruteForce optimal: " + optimalProfit + "]");
-            }
+            for (int test = 1; test <= 5; test++) {
+                int W = 5 + test * 10;
+                Integer optimalProfit = null;
 
-            System.out.printf("\nTest %d | n = %d | maxWeight = %d\n", test, n, W);
-            System.out.printf("%-20s %-10s %-10s %-10s\n", "Algorithm", "Time(μs)", "Profit", "Accuracy");
-
-            for (TaskSolver solver : solvers) {
-                if (solver instanceof BruteForce && n > MAX_BRUTE_N) {
-                    System.out.printf("%-20s %-10s %-10s %-10s\n", solver.getClass().getSimpleName(), "-", "-", "-");
-                    continue;
+                boolean useBruteForce = n <= MAX_BRUTE_N;
+                if (useBruteForce) {
+                    Result bruteResult = runWithTimeout(new BruteForce(), n, W, weights, P, TIME_LIMIT_MS);
+                    optimalProfit = ProfitCalculator.calculateProfit(bruteResult.getItems(), P);
+                    System.out.println("\n[Полный перебор: " + optimalProfit + "]");
                 }
 
-                long startNano = System.nanoTime();
-                Result result = runWithTimeout(solver, n, W, weights, P, TIME_LIMIT_MS);
-                long durationMicros = (System.nanoTime() - startNano) / 1000;
+                System.out.printf("\nТест %d | n = %d | W = %d\n", test, n, W);
+                System.out.printf("%-20s %-10s %-10s %-10s\n", "Алгоритм", "Время(μs)", "Ценность", "Точность");
 
-                int profit = ProfitCalculator.calculateProfit(result.getItems(), P);
-                double accuracy = (optimalProfit == null || optimalProfit <= 0)
-                        ? -1
-                        : (double) profit / optimalProfit;
-                String accStr = (accuracy < 0) ? "-" : String.format("%.2f", accuracy);
+                for (TaskSolver solver : solvers) {
+                    String solverName = solver.getClass().getSimpleName();
 
-                System.out.printf("%-20s %-10d %-10d %-10s\n",
-                        solver.getClass().getSimpleName(), durationMicros, profit, accStr);
+                    if (solver instanceof BruteForce && !useBruteForce) {
+                        continue;
+                    }
+
+                    long startNano = System.nanoTime();
+                    Result result = runWithTimeout(solver, n, W, weights, P, TIME_LIMIT_MS);
+                    long durationMicros = (System.nanoTime() - startNano) / 1000;
+
+                    int profit = ProfitCalculator.calculateProfit(result.getItems(), P);
+
+                    if (solver instanceof Dp) {
+                        dpReferenceProfits[test] = profit;
+                    }
+
+                    int reference = (optimalProfit != null && optimalProfit > 0)
+                            ? optimalProfit
+                            : dpReferenceProfits[test];
+
+                    double accuracy = (reference <= 0) ? -1 : (double) profit / reference;
+                    String accStr = (accuracy < 0) ? "-" : String.format(Locale.US, "%.2f", accuracy);
+
+                    System.out.printf("%-20s %-10d %-10d %-10s\n",
+                            solverName, durationMicros, profit, accStr);
+                    writer.write(String.format(Locale.US, "%d,%s,%d,%d,%s\n",
+                            test, solverName, durationMicros, profit, accStr));
+                }
             }
+        } catch (IOException e) {
+            System.err.println("Ошибка записи в CSV файл: " + e.getMessage());
         }
+
         ThreadPool.shutdown();
     }
 
     public static int[] generateWeights(int n) {
         int[] weights = new int[n];
         for (int i = 0; i < n; i++) {
-            weights[i] = 1 + RANDOM.nextInt(10);
+            weights[i] = 2 + RANDOM.nextInt(10);
         }
         return weights;
     }
@@ -74,9 +95,9 @@ public class Bench {
     public static int[][] generateProfitMatrix(int n) {
         int[][] P = new int[n][n];
         for (int i = 0; i < n; i++) {
-            P[i][i] = RANDOM.nextInt(30);
+            P[i][i] = 5 + RANDOM.nextInt(95);
             for (int j = i + 1; j < n; j++) {
-                int interaction = RANDOM.nextInt(15);
+                int interaction = RANDOM.nextInt(30);
                 P[i][j] = interaction;
                 P[j][i] = interaction;
             }
@@ -91,7 +112,7 @@ public class Bench {
             );
             return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            System.out.println(solver.getClass().getSimpleName() + " exceeded time limit");
+            System.out.println(solver.getClass().getSimpleName() + " вышел за временной лимит");
         } catch (Exception e) {
             System.out.println(solver.getClass().getSimpleName() + " failed: " + e.getMessage());
         }

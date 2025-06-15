@@ -2,7 +2,7 @@ package diploma.runners;
 
 import diploma.entity.Result;
 import diploma.solver.BruteForce;
-import diploma.solver.DpFomeni;
+import diploma.solver.Dp;
 import diploma.solver.DpMultiSorted;
 import diploma.solver.Greedy;
 import diploma.solver.TabuSearch;
@@ -26,7 +26,7 @@ public class LocalExample {
         Result result = bruteForce.solve(n, W, weights, P);
         System.out.println("bruteforce: " + result);
 
-        TaskSolver dpFomeni = new DpFomeni();
+        TaskSolver dpFomeni = new Dp();
         result = dpFomeni.solve(n, W, weights, P);
         System.out.println("fomeni: " + result);
 
