@@ -11,6 +11,7 @@ import java.util.concurrent.*;
 public class Bench {
     private static final int MAX_BRUTE_N = 22;
     private static final long TIME_LIMIT_MS = 20000;
+    private static final Random RANDOM = new Random(123);
 
     private static final List<TaskSolver> solvers = List.of(
             new BruteForce(),
@@ -22,20 +23,12 @@ public class Bench {
     );
 
     public static void main(String[] args) {
-        QkpDataIO.LoadedInstance instance;
-        try {
-            instance = QkpDataIO.loadInstance("instance_20.txt");
-        } catch (Exception e) {
-            System.err.println("Failed to load input instance: " + e.getMessage());
-            return;
-        }
-
-        int n = instance.weights.length;
-        int[] weights = instance.weights;
-        int[][] P = instance.P;
+        int n = 20;
+        int[] weights = generateWeights(n);
+        int[][] P = generateProfitMatrix(n);
 
         for (int test = 1; test <= 5; test++) {
-            int W = 50 + test * 5;
+            int W = 50 + test * 10;
             Integer optimalProfit = null;
 
             if (n <= MAX_BRUTE_N) {
@@ -45,7 +38,7 @@ public class Bench {
             }
 
             System.out.printf("\nTest %d | n = %d | maxWeight = %d\n", test, n, W);
-            System.out.printf("%-20s %-10s %-10s %-10s\n", "Algorithm", "Time(ms)", "Profit", "Accuracy");
+            System.out.printf("%-20s %-10s %-10s %-10s\n", "Algorithm", "Time(μs)", "Profit", "Accuracy");
 
             for (TaskSolver solver : solvers) {
                 if (solver instanceof BruteForce && n > MAX_BRUTE_N) {
@@ -53,25 +46,49 @@ public class Bench {
                     continue;
                 }
 
-                long start = System.currentTimeMillis();
+                long startNano = System.nanoTime();
                 Result result = runWithTimeout(solver, n, W, weights, P, TIME_LIMIT_MS);
-                long duration = System.currentTimeMillis() - start;
+                long durationMicros = (System.nanoTime() - startNano) / 1000;
 
                 int profit = ProfitCalculator.calculateProfit(result.getItems(), P);
-
-                double accuracy = (optimalProfit == null || optimalProfit <= 0) ? -1 : (double) profit / optimalProfit;
+                double accuracy = (optimalProfit == null || optimalProfit <= 0)
+                        ? -1
+                        : (double) profit / optimalProfit;
                 String accStr = (accuracy < 0) ? "-" : String.format("%.2f", accuracy);
 
                 System.out.printf("%-20s %-10d %-10d %-10s\n",
-                        solver.getClass().getSimpleName(), duration, profit, accStr);
+                        solver.getClass().getSimpleName(), durationMicros, profit, accStr);
             }
         }
         ThreadPool.shutdown();
     }
 
+    public static int[] generateWeights(int n) {
+        int[] weights = new int[n];
+        for (int i = 0; i < n; i++) {
+            weights[i] = 1 + RANDOM.nextInt(10);
+        }
+        return weights;
+    }
+
+    public static int[][] generateProfitMatrix(int n) {
+        int[][] P = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            P[i][i] = RANDOM.nextInt(30);
+            for (int j = i + 1; j < n; j++) {
+                int interaction = RANDOM.nextInt(15);
+                P[i][j] = interaction;
+                P[j][i] = interaction;
+            }
+        }
+        return P;
+    }
+
     public static Result runWithTimeout(TaskSolver solver, int n, int W, int[] weights, int[][] P, long timeoutMs) {
         try {
-            CompletableFuture<Result> future = CompletableFuture.supplyAsync(() -> solver.solve(n, W, weights, P), ThreadPool.EXECUTOR);
+            CompletableFuture<Result> future = CompletableFuture.supplyAsync(
+                    () -> solver.solve(n, W, weights, P), ThreadPool.EXECUTOR
+            );
             return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             System.out.println(solver.getClass().getSimpleName() + " exceeded time limit");

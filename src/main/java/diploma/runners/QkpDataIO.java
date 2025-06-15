@@ -53,7 +53,7 @@ public class QkpDataIO {
 
     public static void main(String[] args) throws IOException {
         Random random = new Random(123);
-        int n = 20;
+        int n = 10;
         int[] weights = new int[n];
         int[][] P = new int[n][n];
 
@@ -65,8 +65,8 @@ public class QkpDataIO {
             }
         }
 
-        saveInstance(weights, P, "instance_20.txt");
-        LoadedInstance loaded = loadInstance("instance_20.txt");
+        saveInstance(weights, P, "instance1.txt");
+        LoadedInstance loaded = loadInstance("instance1.txt");
 
         System.out.println("Loaded " + loaded.weights.length + " weights and matrix of size " + loaded.P.length);
     }
