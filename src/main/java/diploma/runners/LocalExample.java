@@ -5,7 +5,7 @@ import diploma.solver.BruteForce;
 import diploma.solver.Dp;
 import diploma.solver.DpMultiSorted;
 import diploma.solver.Greedy;
-import diploma.solver.TabuSearch;
+import diploma.solver.TabuSearchClassic;
 import diploma.solver.TaskSolver;
 import diploma.solver.ZeroOneClassicDp;
 
@@ -38,7 +38,7 @@ public class LocalExample {
         result = greedy.solve(n, W, weights, P);
         System.out.println("greedy: " + result);
 
-        TaskSolver tabu = new TabuSearch();
+        TaskSolver tabu = new TabuSearchClassic();
         result = tabu.solve(n, W, weights, P);
         System.out.println("tabu: " + result);
 

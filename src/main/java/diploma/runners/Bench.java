@@ -21,20 +21,28 @@ public class Bench {
             new DpMultiSorted(),
             new Greedy(),
             new TabuSearch(),
-            new ZeroOneClassicDp()
+            new TabuSearchClassic(),
+            new ZeroOneClassicDp(),
+            new GreedyClassic()
     );
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         int n = 100;
         int[] weights = generateWeights(n);
         int[][] P = generateProfitMatrix(n);
         int[] dpReferenceProfits = new int[6];
 
+//        InputData.QkpInstance data = readQkpFromFile("qmkp_100_100_10_001.txt");
+//        int n = data.n;
+//        int[] weights = data.weights;
+//        int[][] P = data.profits;
+
         try (FileWriter writer = new FileWriter("benchmark_results.csv")) {
             writer.write("Test,Algorithm,Time(μs),Profit,Accuracy\n");
 
             for (int test = 1; test <= 5; test++) {
-                int W = 5 + test * 10;
+                int W = (int) (Arrays.stream(weights).sum() * 0.4);
+//                int W = data.W;
                 Integer optimalProfit = null;
 
                 boolean useBruteForce = n <= MAX_BRUTE_N;
@@ -87,7 +95,7 @@ public class Bench {
     public static int[] generateWeights(int n) {
         int[] weights = new int[n];
         for (int i = 0; i < n; i++) {
-            weights[i] = 2 + RANDOM.nextInt(10);
+            weights[i] = 5 + RANDOM.nextInt(3);
         }
         return weights;
     }
@@ -95,9 +103,9 @@ public class Bench {
     public static int[][] generateProfitMatrix(int n) {
         int[][] P = new int[n][n];
         for (int i = 0; i < n; i++) {
-            P[i][i] = 5 + RANDOM.nextInt(95);
+            P[i][i] = 10 + RANDOM.nextInt(21);
             for (int j = i + 1; j < n; j++) {
-                int interaction = RANDOM.nextInt(30);
+                int interaction = 10 + RANDOM.nextInt(91);
                 P[i][j] = interaction;
                 P[j][i] = interaction;
             }
