@@ -28,7 +28,7 @@ public class BenchBatchRunner {
     );
 
     public static void main(String[] args) throws IOException {
-        String folderPath = "billionnet"; // Папка с файлами .txt
+        String folderPath = "billionnet";
         Files.list(Paths.get(folderPath))
                 .filter(path -> path.toString().endsWith(".txt"))
                 .sorted()

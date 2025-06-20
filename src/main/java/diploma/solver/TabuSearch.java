@@ -80,7 +80,7 @@ public class TabuSearch implements TaskSolver {
 
                 int profit = P[i][i];
                 for (int j : selected) {
-                    profit += P[i][j]; // односторонняя синергия
+                    profit += P[i][j];
                 }
 
                 double ratio = (double) profit / weights[i];
@@ -119,7 +119,7 @@ public class TabuSearch implements TaskSolver {
             if (!solution[i]) continue;
             profit += P[i][i];
             for (int j = 0; j < i; j++) {
-                if (solution[j]) profit += P[i][j]; // однократный учёт синергии
+                if (solution[j]) profit += P[i][j];
             }
         }
         return profit;

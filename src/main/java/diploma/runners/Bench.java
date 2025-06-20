@@ -15,7 +15,7 @@ public class Bench {
     private static final long TIME_LIMIT_MS = 20000;
     private static final Random RANDOM = new Random(1);
 
-    private static final List<TaskSolver> solvers = List.of(
+    private static final List<TaskSolver> solvers = new ArrayList<>(List.of(
             new BruteForce(),
             new Dp(),
             new DpMultiSorted(),
@@ -24,25 +24,36 @@ public class Bench {
             new TabuSearchClassic(),
             new ZeroOneClassicDp(),
             new GreedyClassic()
-    );
+    ));
 
     public static void main(String[] args) throws IOException {
-        int n = 100;
+        int n = 1000;
         int[] weights = generateWeights(n);
         int[][] P = generateProfitMatrix(n);
         int[] dpReferenceProfits = new int[6];
 
-//        InputData.QkpInstance data = readQkpFromFile("qmkp_100_100_10_001.txt");
-//        int n = data.n;
-//        int[] weights = data.weights;
-//        int[][] P = data.profits;
+        solvers.add(new DpWithOrderSolver(
+                Comparator.comparingInt(i -> weights[i]),
+                "DP_WeightAsc"
+        ));
+        solvers.add(new DpWithOrderSolver(
+                (i1, i2) -> Integer.compare(weights[i2], weights[i1]),
+                "DP_WeightDesc"
+        ));
+        solvers.add(new DpWithOrderSolver(
+                (i1, i2) -> Double.compare(
+                        (double) P[i2][i2] / weights[i2],
+                        (double) P[i1][i1] / weights[i1]
+                ),
+                "DP_ValuePerWeight"
+        ));
 
-        try (FileWriter writer = new FileWriter("benchmark_results.csv")) {
+
+        try (FileWriter writer = new FileWriter("benchmark_n.csv")) {
             writer.write("Test,Algorithm,Time(μs),Profit,Accuracy\n");
 
             for (int test = 1; test <= 5; test++) {
-                int W = (int) (Arrays.stream(weights).sum() * 0.4);
-//                int W = data.W;
+                int W = 5 + test * 10;
                 Integer optimalProfit = null;
 
                 boolean useBruteForce = n <= MAX_BRUTE_N;
@@ -57,6 +68,9 @@ public class Bench {
 
                 for (TaskSolver solver : solvers) {
                     String solverName = solver.getClass().getSimpleName();
+                    if (solver.getClass().getSimpleName().equalsIgnoreCase("DpWithOrderSolver")) {
+                        solverName = solver.toString();
+                    }
 
                     if (solver instanceof BruteForce && !useBruteForce) {
                         continue;

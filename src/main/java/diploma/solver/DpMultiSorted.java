@@ -39,7 +39,7 @@ public class DpMultiSorted implements TaskSolver {
                 .build();
     }
 
-    private static Result solveDP(List<Integer> order, int W, int[] weights, int[][] P) {
+    public static Result solveDP(List<Integer> order, int W, int[] weights, int[][] P) {
         int n = order.size();
         int[][] dp = new int[n + 1][W + 1];
         List<Integer>[][] selected = new ArrayList[n + 1][W + 1];
